@@ -3,10 +3,11 @@ package com.example.maptest3;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,16 +15,16 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.location.*;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int PERMISSION_FINE_LOCATION = 99;
 
-    TextView tv_lat, tv_lon, tv_altitude, tv_accuracy, tv_speed, tv_sensor, tv_updates;
+    TextView tv_lat, tv_lon, tv_altitude, tv_accuracy, tv_speed, tv_sensor, tv_updates, tv_address;
     SwitchCompat sw_locationsupdates, sw_gps;
 
     LocationRequest locationRequest;
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
         tv_speed = findViewById(R.id.tv_speed);
         tv_sensor = findViewById(R.id.tv_sensor);
         tv_updates = findViewById(R.id.tv_updates);
+        tv_address = findViewById(R.id.tv_address);
+
         sw_locationsupdates = findViewById(R.id.sw_locationsupdates);
         sw_gps = findViewById(R.id.sw_gps);
 
@@ -53,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // SINGLE correct callback
+        // Location callback
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
@@ -126,11 +129,32 @@ public class MainActivity extends AppCompatActivity {
         tv_accuracy.setText(String.valueOf(location.getAccuracy()));
         tv_altitude.setText(location.hasAltitude() ? String.valueOf(location.getAltitude()) : "N/A");
         tv_speed.setText(location.hasSpeed() ? String.valueOf(location.getSpeed()) : "N/A");
+
+        Geocoder geocoder = new Geocoder(MainActivity.this);
+
+        try {
+            List<Address> addresses = geocoder.getFromLocation(
+                    location.getLatitude(),
+                    location.getLongitude(),
+                    1
+            );
+
+            if (addresses != null && addresses.size() > 0) {
+                tv_address.setText(addresses.get(0).getAddressLine(0));
+            } else {
+                tv_address.setText("Address not found");
+            }
+
+        } catch (Exception e) {
+            tv_address.setText("Address not available");
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == PERMISSION_FINE_LOCATION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startLocationUpdates();
