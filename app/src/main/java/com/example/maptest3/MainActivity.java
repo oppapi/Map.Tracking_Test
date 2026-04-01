@@ -16,6 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import java.util.HashMap;
+
 import com.google.android.gms.location.*;
 
 import java.util.List;
@@ -23,6 +27,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static final int PERMISSION_FINE_LOCATION = 99;
+    DatabaseReference dbRef;
 
     TextView tv_lat, tv_lon, tv_altitude, tv_accuracy, tv_speed, tv_sensor, tv_updates, tv_address;
     SwitchCompat sw_locationsupdates, sw_gps;
@@ -55,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        dbRef = FirebaseDatabase.getInstance().getReference("driver_location");
 
         // Location callback
         locationCallback = new LocationCallback() {
@@ -148,6 +154,16 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             tv_address.setText("Address not available");
         }
+        HashMap<String, Object> locationData = new HashMap<>();
+        locationData.put("lat", location.getLatitude());
+        locationData.put("lng", location.getLongitude());
+        locationData.put("timestamp", System.currentTimeMillis());
+
+        dbRef.push().setValue(locationData)
+                .addOnSuccessListener(aVoid ->
+                        tv_updates.setText("Firebase updated"))
+                .addOnFailureListener(e ->
+                        tv_updates.setText("Firebase error: " + e.getMessage()));
     }
 
     @Override
